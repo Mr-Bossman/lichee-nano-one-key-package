@@ -44,7 +44,7 @@ pull_linux(){
  	rm -rf ${temp_root_dir}/${linux_dir} &&\
 	mkdir -p ${temp_root_dir}/${linux_dir} &&\
 	cd ${temp_root_dir}/${linux_dir} &&\
-	git clone --depth=1 -b nano-5.2-tf https://github.com/Lichee-Pi/linux.git
+	git clone --depth=1 -b nano-5.2-tf-usb-ok https://github.com/Mr-Bossman/linux.git
 	#git clone -b f1c100s --depth=1 https://github.com/Icenowy/linux.git
 	if [ ! -d ${temp_root_dir}/${linux_dir}/linux ]; then
 		echo "Error:pull linux failed"
@@ -56,28 +56,8 @@ pull_linux(){
 		echo "pull linux ok"
 	fi
 }
-pull_balena(){
-	wget https://github.com/balena-io/balena-cli/releases/download/v11.30.17/balena-cli-v11.30.17-linux-x64-standalone.zip
-	unzip balena-cli-v11.30.17-linux-x64-standalone.zip
-	if [ ! -d ${temp_root_dir}/balena-cli ]; then
-		echo "Error:pull balena-cli failed"
-    		exit 0
-	else
-		rm balena-cli-v11.30.17-linux-x64-standalone.zip
-		echo "pull balena-cli ok"
-	fi
-	
-}
-#pull_linux(){
-#	rm -rf ${temp_root_dir}/${linux_dir} 
-#	wget https://github.com/Lichee-Pi/linux/archive/nano-5.2-tf.zip 
-#	unzip ~/nano-5.2-tf.zip 
-#	mv linux-nano-5.2-tf ${linux_dir} 
-#	cd ${linux_dir} 
-#	patch -p1 < ${temp_root_dir}/usb.patch 
-#	cp ${temp_root_dir}/suniv-f1c100s-licheepi-nano-with-lcd.dtb ${temp_root_dir}/${linux_dir}/arch/arm/boot/dts
-#	echo "pull linux ok"
-#}
+
+
 pull_toolchain(){
 	rm -rf ${temp_root_dir}/${toolchain_dir}
 	mkdir -p ${temp_root_dir}/${toolchain_dir}
@@ -107,8 +87,9 @@ pull_buildroot(){
 	rm -rf ${temp_root_dir}/buildroot
 	mkdir -p ${temp_root_dir}/buildroot
 	cd ${temp_root_dir}/buildroot
-	wget https://buildroot.org/downloads/${buildroot_ver}.tar.gz &&\
-	tar xvf ${buildroot_ver}.tar.gz
+	git clone --depth=1 -b 2019.08.3-edit https://github.com/Mr-Bossman/buildroot.git
+
+	mv ${temp_root_dir}/buildroot/buildroot ${temp_root_dir}/buildroot/${buildroot_ver}
 	if [ ! -d ${temp_root_dir}/buildroot/${buildroot_ver} ]; then
 		echo "Error:pull buildroot failed"
     		exit 0
@@ -136,7 +117,7 @@ pull_all(){
 	cp -f ${temp_root_dir}/linux-licheepi_nano_defconfig ${temp_root_dir}/${linux_dir}/arch/arm/configs/licheepi_nano_defconfig
 	cp -f ${temp_root_dir}/linux-licheepi_nano_spiflash_defconfig ${temp_root_dir}/${linux_dir}/arch/arm/configs/licheepi_nano_spiflash_defconfig
 	cp -f ${temp_root_dir}/linux-suniv-f1c100s.dtsi ${temp_root_dir}/${linux_dir}/arch/arm/boot/dts/suniv-f1c100s.dtsi
-	cp -f ${temp_root_dir}/linux-suniv-f1c100s-licheepi-nano-with-lcd.dts ${temp_root_dir}/${linux_dir}/arch/arm/boot/dts/suniv-f1c100s-licheepi-nano-with-lcd.dts
+	cp -f ${temp_root_dir}/linux-suniv-f1c100s-licheepi-nano.dts ${temp_root_dir}/${linux_dir}/arch/arm/boot/dts/suniv-f1c100s-licheepi-nano.dts
 	cp -f ${temp_root_dir}/uboot-licheepi_nano_defconfig ${temp_root_dir}/${u_boot_dir}/configs/licheepi_nano_defconfig
 	cp -f ${temp_root_dir}/uboot-licheepi_nano_spiflash_defconfig ${temp_root_dir}/${u_boot_dir}/configs/licheepi_nano_spiflash_defconfig
 	mkdir -p ${temp_root_dir}/output
@@ -207,7 +188,7 @@ build_uboot(){
 	echo "--->Get cpu info ..."
 	proc_processor=$(grep 'processor' /proc/cpuinfo | sort -u | wc -l)
 	echo "--->Compiling ..."
-  	make ARCH=arm CROSS_COMPILE=${cross_compiler}- -j${proc_processor} > ${temp_root_dir}/build_uboot.log 2>&1
+  	make ARCH=arm CROSS_COMPILE=${cross_compiler}- -j${proc_processor}
 
 	if [ $? -ne 0 ] || [ ! -f ${temp_root_dir}/${u_boot_dir}/u-boot ]; then
         	echo "Error: UBOOT NOT BUILD.Please Get Some Error From build_uboot.log"
@@ -243,7 +224,7 @@ build_linux(){
 	echo "Building linux ..."
     	echo "--->Configuring ..."
 	#make ARCH=arm CROSS_COMPILE=${cross_compiler}- ${linux_config_file} > /dev/null 2>&1
-	make ARCH=arm CROSS_COMPILE=${cross_compiler}- ${linux_config_file}  2>&1
+	make ARCH=arm CROSS_COMPILE=${cross_compiler}- ${linux_config_file} 
 	if [ $? -ne 0 ] || [ ! -f ${temp_root_dir}/${linux_dir}/.config ]; then
 		echo "Error: .config file not exist"
 		exit 1
@@ -251,7 +232,8 @@ build_linux(){
 	echo "--->Get cpu info ..."
 	proc_processor=$(grep 'processor' /proc/cpuinfo | sort -u | wc -l)
 	echo "--->Compiling ..."
-  	make ARCH=arm CROSS_COMPILE=${cross_compiler}- -j${proc_processor} > ${temp_root_dir}/build_linux.log 2>&1
+
+  	make ARCH=arm CROSS_COMPILE=${cross_compiler}- -j${proc_processor}
 
 	if [ $? -ne 0 ] || [ ! -f ${temp_root_dir}/${linux_dir}/arch/arm/boot/zImage ]; then
         	echo "Error: LINUX NOT BUILD.Please Get Some Error From build_linux.log"
@@ -266,7 +248,7 @@ build_linux(){
         cp ${temp_root_dir}/${linux_dir}/arch/arm/boot/dts/suniv-f1c100s-licheepi-nano.dtb ${temp_root_dir}/${linux_dir}/arch/arm/boot/dts/suniv-f1c100s-licheepi-nano-with-lcd.dtb
 
 	if [ ! -f ${temp_root_dir}/${linux_dir}/arch/arm/boot/dts/suniv-f1c100s-licheepi-nano-with-lcd.dtb ]; then
-        	echo "Error: UBOOT NOT BUILD.${temp_root_dir}/${linux_dir}/arch/arm/boot/dts/suniv-f1c100s-licheepi-nano-with-lcd.dtb not found"
+        	echo "Error: LINUX NOT BUILD.${temp_root_dir}/${linux_dir}/arch/arm/boot/dts/suniv-f1c100s-licheepi-nano-with-lcd.dtb not found"
         	exit 1
 	fi
 
@@ -304,13 +286,14 @@ build_buildroot(){
 	make ARCH=arm CROSS_COMPILE=${cross_compiler}- defconfig
 	cp -f ${temp_root_dir}/buildroot.config ${temp_root_dir}/buildroot/${buildroot_dir}/.config
 	make ARCH=arm CROSS_COMPILE=${cross_compiler}- ${temp_root_dir}/buildroot/${buildroot_dir}/.config
+        #echo "source \"${temp_root_dir}/packages/8080/Config.in\"" >> Config.in
 	# make ARCH=arm CROSS_COMPILE=${cross_compiler}- ${buildroot_config_file} > /dev/null 2>&1
 	if [ $? -ne 0 ] || [ ! -f ${temp_root_dir}/buildroot/${buildroot_dir}/.config ]; then
 		echo "Error: .config file not exist"
 		exit 1
 	fi
 	echo "--->Compiling ..."
-	  	make ARCH=arm CROSS_COMPILE=${cross_compiler}- > ${temp_root_dir}/build_buildroot.log 2>&1
+	  	make ARCH=arm CROSS_COMPILE=${cross_compiler}-
 
 	if [ $? -ne 0 ] || [ ! -d ${temp_root_dir}/buildroot/${buildroot_dir}/output/target ]; then
 	        	echo "Error: BUILDROOT NOT BUILD.Please Get Some Error From build_buildroot.log"
@@ -509,7 +492,8 @@ build(){
 	
 }
 flash_tf(){
-	sudo ${temp_root_dir}/balena-cli/balena local flash ${temp_root_dir}/output/image/lichee-nano-normal-size.img --drive $1
+	sudo dd bs=4M if=${temp_root_dir}/output/image/lichee-nano-normal-size.img of=$1 conv=fsync
+	printf  " n\n\n\n\n\nn\nw\n" | sudo fdisk /dev/sdd
 }
 
 #
