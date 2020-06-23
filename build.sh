@@ -44,7 +44,7 @@ pull_linux(){
  	rm -rf ${temp_root_dir}/${linux_dir} &&\
 	mkdir -p ${temp_root_dir}/${linux_dir} &&\
 	cd ${temp_root_dir}/${linux_dir} &&\
-	git clone --depth=1 -b nano-5.2-tf-usb-ok https://github.com/Mr-Bossman/linux.git
+	git clone --depth=1 -b linux-5.2-tf-usb-ok https://github.com/Mr-Bossman/linux.git
 	#git clone -b f1c100s --depth=1 https://github.com/Icenowy/linux.git
 	if [ ! -d ${temp_root_dir}/${linux_dir}/linux ]; then
 		echo "Error:pull linux failed"
@@ -176,7 +176,7 @@ build_uboot(){
 	cd ${temp_root_dir}/${u_boot_dir}
 	echo "Building uboot ..."
     	echo "--->Configuring ..."
-	make ARCH=arm CROSS_COMPILE=${cross_compiler}- ${u_boot_config_file} > /dev/null 2>&1
+	make ARCH=arm CROSS_COMPILE=${cross_compiler}- ${u_boot_config_file} 
         # cp -f ${temp_root_dir}/${u_boot_config_file} ${temp_root_dir}/${u_boot_dir}/.config
 	if [ $? -ne 0 ]; then
 		exit 1
